@@ -1,4 +1,5 @@
 #include <hayai.hpp>
+#include <vector>
 
 #include "pfor/pfor.hpp"
 
@@ -20,45 +21,54 @@ void sleep_worker_unbalanced(int i)
 
 BENCHMARK(SleepWorkerBalanced, Interleaved, 1, 10)
 {
-  p::pfor(0, 500, sleep_worker<1>, p::launch::interleaved);
+  p::pfor(p::launch::interleaved, 0, 500, sleep_worker<1>);
 }
 
 BENCHMARK(SleepWorkerBalanced, Block, 1, 10)
 {
-  p::pfor(0, 500, sleep_worker<1>, p::launch::block);
-}
-
-BENCHMARK(SleepWorkerBalanced, Dynamic, 1, 10)
-{
-  p::pfor(0, 500, sleep_worker<1>, p::launch::dynamic);
+  p::pfor(p::launch::block, 0, 500, sleep_worker<1>);
 }
 
 BENCHMARK(SleepWorkerIncreasing, Interleaved, 1, 10)
 {
-  p::pfor(0, 30, sleep_worker_increasing, p::launch::interleaved);
+  p::pfor(p::launch::interleaved, 0, 30, sleep_worker_increasing);
 }
 
 BENCHMARK(SleepWorkerIncreasing, Block, 1, 10)
 {
-  p::pfor(0, 30, sleep_worker_increasing, p::launch::block);
-}
-
-BENCHMARK(SleepWorkerIncreasing, Dynamic, 1, 10)
-{
-  p::pfor(0, 30, sleep_worker_increasing, p::launch::dynamic);
+  p::pfor(p::launch::block, 0, 30, sleep_worker_increasing);
 }
 
 BENCHMARK(SleepWorkerUnbalanced, Interleaved, 1, 10)
 {
-  p::pfor(0, 20, sleep_worker_unbalanced, p::launch::interleaved);
+  p::pfor(p::launch::interleaved, 0, 20, sleep_worker_unbalanced);
 }
 
 BENCHMARK(SleepWorkerUnbalanced, Block, 1, 10)
 {
-  p::pfor(0, 20, sleep_worker_unbalanced, p::launch::block);
+  p::pfor(p::launch::block, 0, 20, sleep_worker_unbalanced);
 }
 
-BENCHMARK(SleepWorkerUnbalanced, Dynamic, 1, 10)
+BENCHMARK(SumWorker, Interleaved, 1, 100)
 {
-  p::pfor(0, 20, sleep_worker_unbalanced, p::launch::dynamic);
+  std::vector<int> vec(1000000);
+  std::iota(vec.begin(), vec.end(), 0);
+
+  std::atomic<int> sum(0);
+  p::pfor<int>(p::launch::interleaved, 0ul, vec.size(),
+      [](int) { return 0; },
+      [&](std::size_t i, int local) { return local + vec[i]; },
+      [&](int tid, int local) { sum += local; });
+}
+
+BENCHMARK(SumWorker, Block, 1, 100)
+{
+  std::vector<int> vec(1000000);
+  std::iota(vec.begin(), vec.end(), 0);
+
+  std::atomic<int> sum(0);
+  p::pfor<int>(p::launch::block, 0ul, vec.size(),
+      [](int) { return 0; },
+      [&](std::size_t i, int local) { return local + vec[i]; },
+      [&](int tid, int local) { sum += local; });
 }
