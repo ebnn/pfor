@@ -11,17 +11,27 @@ This single file header library provides a lightweight implementation of a paral
 Example
 -------
 ```cpp
-#include "pfor/pfor.hpp"
 #include <algorithm>
+#include <vector>
+#include <atomic>
+
+#include "pfor/pfor.hpp"
 
 int main(void)
 {
   std::vector<int> vec;
-  std::generate_n(vec.begin(), 100000, rand);
+  std::generate_n(vec.begin(), 1000000, rand);
   
-  p::pfor<int>(0, vec.size(), [&](int i, int local_sum) {
-    local_sum += vec[i];
-  });
+  std::atomic<int> sum(0);
+  p::pfor<int>(0ul, vec.size(),
+    []() { return 0; },
+    [&vec](std::size_t i, int local_sum) { return local_sum + vec[i]; },
+    [&sum](int local_sum) { sum += local_sum; });
 }
 ```
 
+Todo
+----
+- Support for containers and iterators
+- Support for optimising small loop bodies
+- Support for breaking out of the loop
