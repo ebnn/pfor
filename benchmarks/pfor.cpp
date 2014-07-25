@@ -56,9 +56,9 @@ BENCHMARK(SumWorker, Interleaved, 1, 100)
 
   std::atomic<int> sum(0);
   p::pfor<int>(p::launch::interleaved, 0ul, vec.size(),
-      [](int) { return 0; },
+      []() { return 0; },
       [&](std::size_t i, int local) { return local + vec[i]; },
-      [&](int tid, int local) { sum += local; });
+      [&](int local) { sum += local; });
 }
 
 BENCHMARK(SumWorker, Block, 1, 100)
@@ -68,7 +68,39 @@ BENCHMARK(SumWorker, Block, 1, 100)
 
   std::atomic<int> sum(0);
   p::pfor<int>(p::launch::block, 0ul, vec.size(),
-      [](int) { return 0; },
+      []() { return 0; },
       [&](std::size_t i, int local) { return local + vec[i]; },
-      [&](int tid, int local) { sum += local; });
+      [&](int local) { sum += local; });
+}
+
+BENCHMARK(InitWorkerFor, Interleaved, 1, 100)
+{
+  std::vector<int> vec(1000000);
+
+  p::pforeach(p::launch::interleaved, vec.begin(), vec.end(),
+      [&](int &val) { val = 42; });
+}
+
+BENCHMARK(InitWorkerFor, Block, 1, 100)
+{
+  std::vector<int> vec(1000000);
+
+  p::pfor(p::launch::block, 0ul, vec.size(),
+      [&](std::size_t i) { vec[i] = 42; });
+}
+
+BENCHMARK(InitWorkerForeach, Interleaved, 1, 100)
+{
+  std::vector<int> vec(1000000);
+
+  p::pfor(p::launch::interleaved, 0ul, vec.size(),
+      [&](std::size_t i) { vec[i] = 42; });
+}
+
+BENCHMARK(InitWorkerForeach, Block, 1, 100)
+{
+  std::vector<int> vec(1000000);
+
+  p::pforeach(p::launch::block, vec.begin(), vec.end(),
+      [&](int &val) { val = 42; });
 }
